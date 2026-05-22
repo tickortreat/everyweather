@@ -1,0 +1,18 @@
+---
+layout: layouts/base.njk
+permalink: /record/
+title: The Record
+contentClass: record
+---
+
+<header class="page-header">
+  <h1 class="page-title">The Record</h1>
+  <p class="page-subtitle">All entries, newest first. {{ collections.entries.length }} so far.</p>
+</header>
+
+<div class="record-entries">
+  {% for entry in collections.entries %}
+    {% include "partials/entry.njk" %}
+    {% if not loop.last %}<hr class="record-divider">{% endif %}
+  {% endfor %}
+</div>

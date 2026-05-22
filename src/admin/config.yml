@@ -1,0 +1,78 @@
+# Decap CMS configuration for everyweather
+
+backend:
+  name: git-gateway
+  branch: main
+
+# Local development backend — uncomment when running `npx decap-server`
+# local_backend: true
+
+# Media uploads
+media_folder: "src/assets/images/uploads"
+public_folder: "/assets/images/uploads"
+
+# Site URL — update after deployment
+site_url: https://everyweather.org
+display_url: https://everyweather.org
+logo_url: https://everyweather.org/assets/everyweather-mark.svg
+
+collections:
+
+  # ---------------------------------------------------------------
+  # Entries — the daily observations
+  # ---------------------------------------------------------------
+  - name: "entries"
+    label: "Entries"
+    label_singular: "Entry"
+    folder: "src/content/entries"
+    create: true
+    slug: "{{fields.observed}}"
+    extension: "md"
+    format: "frontmatter"
+    summary: "{{observed}} — {{scribeName}}"
+    sortable_fields: ['observed', 'scribeName']
+    view_filters:
+      - label: "Lucas"
+        field: scribeId
+        pattern: lucas-farrell
+      - label: "Louisa"
+        field: scribeId
+        pattern: louisa-conrad
+    fields:
+      - { label: "Date observed", name: "observed", widget: "datetime", date_format: "YYYY-MM-DD", time_format: false, picker_utc: false, hint: "The day the observation was made." }
+      - { label: "Time observed", name: "observedTime", widget: "string", required: false, hint: "24-hour format like '21:06' or 12-hour like '9:06 PM'." }
+      - label: "Scribe"
+        name: "scribeId"
+        widget: "select"
+        options:
+          - { label: "Lucas Farrell", value: "lucas-farrell" }
+          - { label: "Louisa Conrad", value: "louisa-conrad" }
+        default: "lucas-farrell"
+      - { label: "Scribe name (display)", name: "scribeName", widget: "string", default: "Lucas Farrell", hint: "How the scribe's name appears on the entry." }
+      - { label: "Watershed", name: "watershed", widget: "string", default: "West River Watershed" }
+      - { label: "Observation", name: "body", widget: "markdown", hint: "The day's observation. Prose, one or more paragraphs." }
+
+      - label: "Forecast (optional)"
+        name: "forecastSection"
+        widget: "object"
+        required: false
+        collapsed: true
+        fields:
+          - { label: "Forecast high (°F)", name: "forecastHigh", widget: "number", required: false, value_type: "int" }
+          - { label: "Forecast low (°F)", name: "forecastLow", widget: "number", required: false, value_type: "int" }
+          - { label: "Forecast conditions", name: "forecastConditions", widget: "string", required: false, hint: "e.g. 'partly cloudy', 'rain in the afternoon'" }
+          - { label: "Forecast source", name: "forecastSource", widget: "string", required: false, default: "NWS" }
+
+      - label: "Photos (optional)"
+        name: "photos"
+        widget: "list"
+        required: false
+        summary: "{{fields.caption}}"
+        fields:
+          - { label: "Image", name: "image", widget: "image" }
+          - { label: "Caption", name: "caption", widget: "string", required: false }
+
+  # ---------------------------------------------------------------
+  # Scribes (read-only for now — managed in _data/scribes.js)
+  # ---------------------------------------------------------------
+  # Future: surface scribe management here too.

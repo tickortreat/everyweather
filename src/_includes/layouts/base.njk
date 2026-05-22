@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% if title %}{{ title }} — {% endif %}{{ site.title }}</title>
+<meta name="description" content="{{ description or site.description }}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Inter:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="/assets/css/styles.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div class="masthead-left">
+      <div class="vol">Vol. I &middot; No. {{ collections.entries.length }}</div>
+      <div class="established">Begun {{ site.watershed.began | dayMonth }}</div>
+    </div>
+    <div class="masthead-center">
+      <a href="/" class="wordmark-link">
+        <h1 class="wordmark"><span class="every">every</span><span class="weather">weather</span></h1>
+      </a>
+    </div>
+    <div class="masthead-right">
+      <div class="place">{{ site.watershed.name }}</div>
+      <div class="place-sub">{{ site.watershed.place }}</div>
+    </div>
+  </div>
+  <nav class="primary-nav">
+    {% for item in site.nav %}
+      <a href="{{ item.href }}" class="nav-link{% if page.url == item.href %} active{% endif %}">{{ item.label }}</a>
+    {% endfor %}
+  </nav>
+</header>
+
+<main class="content {{ contentClass }}">
+  {{ content | safe }}
+</main>
+
+<footer class="colophon">
+  <div class="colophon-inner">
+    <div class="colophon-mark">everyweather</div>
+    <div class="colophon-meta">A daily record, kept in place. {{ site.watershed.name }}, {{ site.watershed.place }}.</div>
+    <div class="colophon-scribe-link"><a href="/scribe/">For scribes &rarr;</a></div>
+  </div>
+</footer>
+
+</body>
+</html>

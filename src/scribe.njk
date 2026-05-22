@@ -1,0 +1,285 @@
+---
+layout: layouts/base.njk
+permalink: /scribe/
+title: Scribe
+contentClass: porch
+eleventyExcludeFromCollections: true
+---
+
+<!-- Netlify Identity widget script -->
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+
+<!-- Embed scribe + recent-entry data for client-side use -->
+<script id="scribes-data" type="application/json">
+{{ scribes | dump | safe }}
+</script>
+<script id="entries-data" type="application/json">
+[
+  {% for e in collections.entries %}
+    {
+      "date": "{{ e.data.observed | isoDate }}",
+      "scribeId": "{{ e.data.scribeId }}",
+      "scribeName": "{{ e.data.scribeName }}",
+      "url": "{{ e.url }}",
+      "snippet": "{{ e.templateContent | snippet(120) | replace('"', '\\"') }}"
+    }{% if not loop.last %},{% endif %}
+  {% endfor %}
+]
+</script>
+<script id="companion-data" type="application/json">
+{{ companion | dump | safe }}
+</script>
+
+<!-- Loading state -->
+<div id="porch-loading" class="porch-loading">
+  <p>Opening the porch…</p>
+</div>
+
+<!-- Unauthenticated state -->
+<div id="porch-login" class="porch-login" style="display: none;">
+  <div class="porch-card">
+    <h1 class="porch-title">The Scribe's Porch</h1>
+    <p class="porch-tagline">A private room for those who keep the record.</p>
+    <button id="login-btn" class="porch-btn primary">Sign in</button>
+    <p class="porch-help">If you've been invited as a scribe, use your email and password. If you haven't received an invitation, this room isn't yet for you — but the public record is at <a href="/">everyweather.org</a>.</p>
+  </div>
+</div>
+
+<!-- Unrecognized user state -->
+<div id="porch-stranger" class="porch-login" style="display: none;">
+  <div class="porch-card">
+    <h1 class="porch-title">Hello, friend.</h1>
+    <p class="porch-tagline">You're signed in, but your email isn't yet linked to a scribe profile.</p>
+    <p class="porch-help">If you've been invited and this seems wrong, contact the keeper of the record. In the meantime, you can read the public archive at <a href="/">everyweather.org</a>.</p>
+    <button id="logout-btn-stranger" class="porch-btn">Sign out</button>
+  </div>
+</div>
+
+<!-- Authenticated scribe state -->
+<div id="porch-main" class="porch-main" style="display: none;">
+
+  <header class="porch-header">
+    <div class="porch-greeting">
+      <h1 class="porch-hello">Welcome, <span id="scribe-first-name">scribe</span>.</h1>
+      <p class="porch-date" id="porch-today-date"></p>
+    </div>
+    <div class="porch-watershed">
+      <span class="porch-watershed-label">scribing for</span>
+      <span class="porch-watershed-name" id="scribe-watershed">West River Watershed</span>
+    </div>
+  </header>
+
+  <section class="porch-status">
+    <div id="status-block">
+      <!-- Filled in by JS — either "you haven't scribed today" or "you wrote at 9:06pm" -->
+    </div>
+    <div class="porch-actions">
+      <a href="/admin/#/collections/entries/new" class="porch-btn primary" id="begin-today-btn">Begin today's entry</a>
+    </div>
+  </section>
+
+  <section class="porch-companion" id="companion-section" style="display: none;">
+    <div class="companion-label">On this day, in an older record</div>
+    <blockquote>
+      <p id="companion-text"></p>
+      <cite>
+        <span class="cite-author" id="companion-author"></span>
+        <span class="cite-meta" id="companion-meta"></span>
+      </cite>
+    </blockquote>
+  </section>
+
+  <section class="porch-co-scribes" id="co-scribes-section" style="display: none;">
+    <h2 class="porch-section-title">Your fellow scribes today</h2>
+    <div id="co-scribes-list"></div>
+  </section>
+
+  <section class="porch-recent">
+    <h2 class="porch-section-title">Your recent work</h2>
+    <ul class="porch-recent-list" id="recent-entries-list">
+      <!-- Filled by JS -->
+    </ul>
+    <p class="porch-recent-empty" id="recent-entries-empty" style="display: none;">
+      No entries yet. Today is the first day.
+    </p>
+  </section>
+
+  <section class="porch-tools">
+    <h2 class="porch-section-title">Tools</h2>
+    <ul class="porch-tools-list">
+      <li><a href="/admin/#/collections/entries">Edit or revisit past entries</a></li>
+      <li><a href="/" target="_blank" rel="noopener">Open the public site &rarr;</a></li>
+      <li><button id="logout-btn" class="porch-textbtn">Sign out</button></li>
+    </ul>
+  </section>
+
+  <footer class="porch-foot">
+    <p class="porch-quiet">The porch is a private room. What you write here, when you publish, becomes part of the public record at everyweather.org.</p>
+  </footer>
+
+</div>
+
+<script>
+(function() {
+  // Read data passed from Eleventy
+  const scribes = JSON.parse(document.getElementById('scribes-data').textContent);
+  const entries = JSON.parse(document.getElementById('entries-data').textContent);
+  const companion = JSON.parse(document.getElementById('companion-data').textContent);
+
+  const loadingEl = document.getElementById('porch-loading');
+  const loginEl = document.getElementById('porch-login');
+  const strangerEl = document.getElementById('porch-stranger');
+  const mainEl = document.getElementById('porch-main');
+
+  function showState(state) {
+    loadingEl.style.display = 'none';
+    loginEl.style.display = 'none';
+    strangerEl.style.display = 'none';
+    mainEl.style.display = 'none';
+    if (state === 'login') loginEl.style.display = 'block';
+    if (state === 'stranger') strangerEl.style.display = 'block';
+    if (state === 'main') mainEl.style.display = 'block';
+  }
+
+  function todayISO() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  function todayMonthDay() {
+    const d = new Date();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${m}-${day}`;
+  }
+
+  function formatDateLong(isoDate) {
+    const d = new Date(isoDate + 'T12:00:00');
+    return d.toLocaleDateString('en-US', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    });
+  }
+
+  function formatDateShort(isoDate) {
+    const d = new Date(isoDate + 'T12:00:00');
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+
+  function populatePorch(scribe) {
+    const firstName = scribe.name.split(' ')[0];
+    document.getElementById('scribe-first-name').textContent = firstName;
+    document.getElementById('scribe-watershed').textContent = scribe.watershed;
+    document.getElementById('porch-today-date').textContent = formatDateLong(todayISO());
+
+    // Status block — have you scribed today?
+    const today = todayISO();
+    const myEntriesToday = entries.filter(e => e.date === today && e.scribeId === scribe.id);
+    const statusBlock = document.getElementById('status-block');
+    const beginBtn = document.getElementById('begin-today-btn');
+
+    if (myEntriesToday.length > 0) {
+      statusBlock.innerHTML = `
+        <div class="status-done">
+          <span class="status-icon">✓</span>
+          <span class="status-text">You scribed today. </span>
+          <a href="${myEntriesToday[0].url}" class="status-link">Read what you wrote</a>
+        </div>
+      `;
+      beginBtn.textContent = "Add another entry for today";
+    } else {
+      statusBlock.innerHTML = `
+        <div class="status-pending">
+          <span class="status-text">Today is unscribed.</span>
+        </div>
+      `;
+    }
+
+    // Companion for today
+    const todayMD = todayMonthDay();
+    if (companion[todayMD] && companion[todayMD].length > 0) {
+      const c = companion[todayMD][0];
+      document.getElementById('companion-text').textContent = c.text;
+      document.getElementById('companion-author').textContent = c.author;
+      document.getElementById('companion-meta').textContent = `${c.source} · ${c.year} · ${c.location}`;
+      document.getElementById('companion-section').style.display = 'block';
+    }
+
+    // Fellow scribes today
+    const fellowEntries = entries.filter(e => e.date === today && e.scribeId !== scribe.id);
+    if (fellowEntries.length > 0) {
+      const list = document.getElementById('co-scribes-list');
+      list.innerHTML = fellowEntries.map(e => `
+        <a href="${e.url}" class="co-scribe-entry">
+          <div class="co-scribe-name">${e.scribeName}</div>
+          <div class="co-scribe-snippet">${e.snippet}</div>
+        </a>
+      `).join('');
+      document.getElementById('co-scribes-section').style.display = 'block';
+    }
+
+    // Recent entries (this scribe's last 5)
+    const myRecent = entries
+      .filter(e => e.scribeId === scribe.id)
+      .slice(0, 5);
+    const recentList = document.getElementById('recent-entries-list');
+    if (myRecent.length === 0) {
+      document.getElementById('recent-entries-empty').style.display = 'block';
+      recentList.style.display = 'none';
+    } else {
+      recentList.innerHTML = myRecent.map(e => `
+        <li>
+          <a href="${e.url}" class="recent-entry-link">
+            <span class="recent-entry-date">${formatDateShort(e.date)}</span>
+            <span class="recent-entry-snippet">${e.snippet}</span>
+          </a>
+        </li>
+      `).join('');
+    }
+  }
+
+  function handleUser(user) {
+    if (!user) {
+      showState('login');
+      return;
+    }
+    const email = (user.email || '').toLowerCase();
+    const scribe = scribes.find(s => s.email && s.email.toLowerCase() === email);
+    if (!scribe) {
+      showState('stranger');
+      return;
+    }
+    populatePorch(scribe);
+    showState('main');
+  }
+
+  // Wait for Netlify Identity to load
+  if (window.netlifyIdentity) {
+    netlifyIdentity.on('init', user => handleUser(user));
+    netlifyIdentity.on('login', user => {
+      handleUser(user);
+      netlifyIdentity.close();
+    });
+    netlifyIdentity.on('logout', () => showState('login'));
+
+    // Buttons
+    document.getElementById('login-btn').addEventListener('click', () => {
+      netlifyIdentity.open();
+    });
+    document.getElementById('logout-btn').addEventListener('click', () => {
+      netlifyIdentity.logout();
+    });
+    document.getElementById('logout-btn-stranger').addEventListener('click', () => {
+      netlifyIdentity.logout();
+    });
+  } else {
+    // Netlify Identity script failed to load (e.g., local dev without netlify dev)
+    showState('login');
+    document.getElementById('login-btn').addEventListener('click', () => {
+      alert('Netlify Identity is not available in local development without `netlify dev`. Deploy to Netlify to use the scribe porch.');
+    });
+  }
+})();
+</script>

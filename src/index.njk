@@ -1,0 +1,61 @@
+---
+layout: layouts/base.njk
+permalink: /
+contentClass: home
+---
+
+{% set todaysEntries = collections.entriesOnLatestDay %}
+{% if todaysEntries.length %}
+
+  {% for entry in todaysEntries %}
+    {% include "partials/entry.njk" %}
+    {% if not loop.last %}<hr class="entry-divider-soft">{% endif %}
+  {% endfor %}
+
+  <section class="archive-preview">
+    <div class="archive-header">
+      <h2 class="archive-title">Earlier this season</h2>
+      <a href="/record/" class="archive-link">The full record &rarr;</a>
+    </div>
+
+    <div class="archive-body">
+
+      <div class="calendar">
+        {% set latestDate = todaysEntries[0].data.observed %}
+        {% set y = latestDate.getFullYear() %}
+        {% set m = latestDate.getMonth() + 1 %}
+        <div class="month-label">{{ latestDate | monthYear }}</div>
+        {% calendar y, m, collections.entriesByMonth %}
+        <div class="calendar-legend">
+          <span class="legend-item"><span class="legend-dot scribed"></span>scribed</span>
+          <span class="legend-item"><span class="legend-dot today"></span>today</span>
+          <span class="legend-item"><span class="legend-dot future"></span>to come</span>
+        </div>
+      </div>
+
+      <div class="recent-list">
+        <h3 class="recent-title">Recent entries</h3>
+        <ul>
+          {% set shown = 0 %}
+          {% set todayCount = todaysEntries.length %}
+          {% for e in collections.entries.slice(todayCount, todayCount + 5) %}
+            <li>
+              <a href="{{ e.url }}" class="recent-entry">
+                <span class="recent-date">{{ e.data.observed | dayMonthShort }}</span>
+                <span class="recent-snippet">{{ e.templateContent | snippet(110) }}</span>
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+
+    </div>
+  </section>
+
+{% else %}
+
+  <div class="empty-state">
+    <p>The first entry has not yet been scribed.</p>
+  </div>
+
+{% endif %}

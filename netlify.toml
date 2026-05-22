@@ -1,0 +1,19 @@
+[build]
+  command = "npm run build"
+  publish = "_site"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# Enable Decap CMS via Netlify Identity + Git Gateway
+# Set up Identity in the Netlify dashboard, then enable Git Gateway under Identity settings.
+
+[[headers]]
+  for = "/assets/css/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/assets/images/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

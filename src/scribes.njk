@@ -1,0 +1,23 @@
+---
+layout: layouts/base.njk
+permalink: /scribes/
+title: Scribes
+contentClass: prose-page
+---
+
+<header class="page-header">
+  <h1 class="page-title">Scribes</h1>
+  <p class="page-subtitle">Those who keep the record.</p>
+</header>
+
+<div class="scribes-grid">
+  {% for scribe in scribes %}
+    <div class="scribe-card{% if scribe.status == 'pending' %} placeholder{% endif %}">
+      <div class="scribe-card-watershed">{{ scribe.watershed }}</div>
+      <div class="scribe-card-name">{{ scribe.name }}</div>
+      <div class="scribe-card-dates">
+        {% if scribe.since %}scribing since {{ scribe.since | dayMonth }}{% else %}joining soon{% endif %}
+      </div>
+    </div>
+  {% endfor %}
+</div>

@@ -1,0 +1,73 @@
+{# Entry partial — accepts an `entry` collection item OR falls back to current page #}
+
+{% set d = entry.data.observed if entry.data else observed %}
+{% set t = entry.data.observedTime if entry.data else observedTime %}
+{% set sName = entry.data.scribeName if entry.data else scribeName %}
+{% set body = entry.templateContent if entry.templateContent else content %}
+{% set photos = entry.data.photos if entry.data else photos %}
+{% set forecastObj = entry.data.forecastSection if entry.data else forecastSection %}
+
+{% set monthDayKey = d | monthDay %}
+{% set companions = companion[monthDayKey] %}
+
+<article class="entry">
+
+  <header class="entry-header">
+    <div class="entry-date">
+      <time datetime="{{ d | isoDate }}">
+        <span class="weekday">{{ d | weekday }}</span>
+        <span class="date-full">{{ d | dayMonth }}</span>
+        {% if t %}
+          <span class="time">{{ t | formatTime }}</span>
+        {% endif %}
+      </time>
+    </div>
+    <div class="entry-scribe">
+      <span class="scribe-label">scribed by</span>
+      <span class="scribe-name">{{ sName }}</span>
+    </div>
+  </header>
+
+  <div class="entry-body">
+    {{ body | safe }}
+  </div>
+
+  {% if photos and photos.length %}
+    <div class="entry-photos">
+      {% for photo in photos %}
+        <figure class="entry-photo">
+          <img src="{{ photo.image }}" alt="{{ photo.caption or '' }}" loading="lazy">
+          {% if photo.caption %}<figcaption>{{ photo.caption }}</figcaption>{% endif %}
+        </figure>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if forecastObj and (forecastObj.forecastHigh or forecastObj.forecastConditions) %}
+    <footer class="entry-footer">
+      <div class="forecast-row">
+        <span class="forecast-label">Forecast</span>
+        {% if forecastObj.forecastSource %}<span class="forecast-source">{{ forecastObj.forecastSource }}</span>{% endif %}
+        <span class="forecast-data">
+          {%- if forecastObj.forecastHigh %}{{ forecastObj.forecastHigh }}&deg;F{% endif -%}
+          {%- if forecastObj.forecastConditions %} &middot; {{ forecastObj.forecastConditions }}{% endif -%}
+        </span>
+      </div>
+    </footer>
+  {% endif %}
+
+  {% if companions and companions.length %}
+    {% set c = companions[0] %}
+    <aside class="companion">
+      <div class="companion-label">On this day, in an older record</div>
+      <blockquote>
+        <p>{{ c.text }}</p>
+        <cite>
+          <span class="cite-author">{{ c.author }}</span>
+          <span class="cite-meta">{{ c.source }} &middot; {{ c.year }} &middot; {{ c.location }}</span>
+        </cite>
+      </blockquote>
+    </aside>
+  {% endif %}
+
+</article>
