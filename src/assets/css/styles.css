@@ -1159,3 +1159,138 @@ a { color: inherit; text-decoration: none; }
   .masthead { border-bottom: 1px solid #000; }
   body { background: white; }
 }
+
+/* =====================================================
+   Forecasts block (multi-source NWS / ECMWF / MET Norway)
+   ===================================================== */
+
+.forecasts-block {
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  padding: 1.5rem 1.75rem;
+  background: var(--bg-soft);
+  margin: 0 0 3rem;
+  max-width: 100%;
+}
+
+.porch-forecasts-wrap {
+  margin-bottom: 2.5rem;
+}
+
+.porch-forecasts-wrap .forecasts-block {
+  margin-bottom: 0;
+}
+
+.forecasts-loading .forecast-source-value {
+  color: var(--ink-ghost);
+  font-style: italic;
+}
+
+.forecasts-label {
+  font-family: var(--sans);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--ink-faded);
+  font-weight: 500;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.forecasts-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.forecast-source-row {
+  display: grid;
+  grid-template-columns: 7rem 1fr;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px dotted var(--rule-soft);
+}
+
+.forecast-source-row:last-child {
+  border-bottom: none;
+}
+
+.forecast-source-name {
+  font-family: var(--sans);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-weight: 600;
+  color: var(--sky);
+}
+
+.forecast-source-value {
+  font-family: var(--serif);
+  font-size: 1rem;
+  color: var(--ink);
+}
+
+.forecast-source-temp {
+  font-weight: 500;
+}
+
+.forecast-source-conditions {
+  color: var(--ink-faded);
+  font-style: italic;
+  margin-left: 0.25rem;
+}
+
+.forecast-source-error {
+  color: var(--ink-ghost);
+  font-style: italic;
+}
+
+.forecasts-invitation {
+  text-align: center;
+  margin-top: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px dotted var(--rule);
+}
+
+.forecasts-invitation-link {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 1rem;
+  color: var(--green);
+  border-bottom: 1px dotted var(--green-soft);
+  padding-bottom: 1px;
+  transition: all 0.15s ease;
+}
+
+.forecasts-invitation-link:hover {
+  color: var(--green-soft);
+  border-bottom-color: var(--green);
+}
+
+.forecasts-invitation-link .arrow {
+  margin-left: 0.25rem;
+  font-style: normal;
+}
+
+/* Mobile adjustments for forecast block */
+@media (max-width: 720px) {
+  .forecasts-block {
+    padding: 1.25rem 1.25rem;
+  }
+  .forecast-source-row {
+    grid-template-columns: 5.5rem 1fr;
+    gap: 0.75rem;
+  }
+  .forecast-source-name {
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+  }
+  .forecast-source-value {
+    font-size: 0.95rem;
+  }
+  .forecasts-invitation-link {
+    font-size: 0.95rem;
+  }
+}
