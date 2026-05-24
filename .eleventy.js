@@ -35,9 +35,9 @@ module.exports = function(eleventyConfig) {
     const all = collectionApi.getFilteredByGlob("src/content/entries/*.md")
       .sort((a, b) => new Date(b.data.observed).getTime() - new Date(a.data.observed).getTime());
     if (!all.length) return [];
-    const latestDate = DateTime.fromJSDate(new Date(all[0].data.observed)).toISODate();
+    const latestDate = DateTime.fromJSDate(all[0].data.observed, { zone: "utc" }).toISODate();
     return all.filter(e => {
-      return DateTime.fromJSDate(new Date(e.data.observed)).toISODate() === latestDate;
+      return DateTime.fromJSDate(e.data.observed, { zone: "utc" }).toISODate() === latestDate;
     });
   });
 
@@ -45,7 +45,7 @@ module.exports = function(eleventyConfig) {
   eleventyConfig.addCollection("entriesByMonth", function(collectionApi) {
     const grouped = {};
     collectionApi.getFilteredByGlob("src/content/entries/*.md").forEach(entry => {
-      const date = DateTime.fromJSDate(new Date(entry.data.observed));
+      const date = DateTime.fromJSDate(entry.data.observed, { zone: "utc" });
       const key = date.toFormat("yyyy-LL");
       if (!grouped[key]) grouped[key] = [];
       grouped[key].push(entry);
@@ -54,31 +54,48 @@ module.exports = function(eleventyConfig) {
   });
 
   // -----------------------------------------------------
+  // Date helper — handle both string dates ("2026-05-13") and JS Date
+  // objects (Eleventy converts frontmatter dates to JS Date at UTC midnight).
+  // We pin everything to UTC for display so dates don't shift across timezones.
+  // -----------------------------------------------------
+
+  function toDT(dateValue) {
+    if (!dateValue) return null;
+    if (typeof dateValue === "string") {
+      // ISO date string like "2026-05-13" — parse as UTC-anchored
+      return DateTime.fromISO(dateValue, { zone: "utc" });
+    }
+    // JS Date object — interpret in UTC since Eleventy stores frontmatter
+    // dates as UTC midnight
+    return DateTime.fromJSDate(dateValue, { zone: "utc" });
+  }
+
+  // -----------------------------------------------------
   // Filters
   // -----------------------------------------------------
 
   // Format a date: "Monday, 18 May 2026"
   eleventyConfig.addFilter("longDate", function(dateValue) {
-    if (!dateValue) return "";
-    return DateTime.fromJSDate(new Date(dateValue)).toFormat("cccc, d LLLL yyyy");
+    const dt = toDT(dateValue);
+    return dt ? dt.toFormat("cccc, d LLLL yyyy") : "";
   });
 
   // Format the weekday only
   eleventyConfig.addFilter("weekday", function(dateValue) {
-    if (!dateValue) return "";
-    return DateTime.fromJSDate(new Date(dateValue)).toFormat("cccc");
+    const dt = toDT(dateValue);
+    return dt ? dt.toFormat("cccc") : "";
   });
 
   // Format "18 May 2026"
   eleventyConfig.addFilter("dayMonth", function(dateValue) {
-    if (!dateValue) return "";
-    return DateTime.fromJSDate(new Date(dateValue)).toFormat("d LLLL yyyy");
+    const dt = toDT(dateValue);
+    return dt ? dt.toFormat("d LLLL yyyy") : "";
   });
 
   // Format "18 May"
   eleventyConfig.addFilter("dayMonthShort", function(dateValue) {
-    if (!dateValue) return "";
-    return DateTime.fromJSDate(new Date(dateValue)).toFormat("d LLL");
+    const dt = toDT(dateValue);
+    return dt ? dt.toFormat("d LLL") : "";
   });
 
   // Format time: "9:06 PM"
@@ -93,20 +110,32 @@ module.exports = function(eleventyConfig) {
 
   // ISO date for <time datetime="">
   eleventyConfig.addFilter("isoDate", function(dateValue) {
-    if (!dateValue) return "";
-    return DateTime.fromJSDate(new Date(dateValue)).toFormat("yyyy-LL-dd");
+    const dt = toDT(dateValue);
+    return dt ? dt.toFormat("yyyy-LL-dd") : "";
   });
 
   // "May 2026"
   eleventyConfig.addFilter("monthYear", function(dateValue) {
-    if (!dateValue) return "";
-    return DateTime.fromJSDate(new Date(dateValue)).toFormat("LLLL yyyy");
+    const dt = toDT(dateValue);
+    return dt ? dt.toFormat("LLLL yyyy") : "";
   });
 
   // Month-day key for companion lookup: "05-18"
   eleventyConfig.addFilter("monthDay", function(dateValue) {
-    if (!dateValue) return "";
-    return DateTime.fromJSDate(new Date(dateValue)).toFormat("LL-dd");
+    const dt = toDT(dateValue);
+    return dt ? dt.toFormat("LL-dd") : "";
+  });
+
+  // Year number (UTC)
+  eleventyConfig.addFilter("year", function(dateValue) {
+    const dt = toDT(dateValue);
+    return dt ? dt.year : null;
+  });
+
+  // Month number, 1-12 (UTC)
+  eleventyConfig.addFilter("monthNum", function(dateValue) {
+    const dt = toDT(dateValue);
+    return dt ? dt.month : null;
   });
 
   // Truncate prose to a snippet
@@ -132,7 +161,7 @@ module.exports = function(eleventyConfig) {
   eleventyConfig.addShortcode("calendar", function(year, month, entriesByMonth) {
     const monthKey = `${year}-${String(month).padStart(2, "0")}`;
     const entries = entriesByMonth[monthKey] || [];
-    const entryDays = new Set(entries.map(e => DateTime.fromJSDate(new Date(e.data.observed)).day));
+    const entryDays = new Set(entries.map(e => DateTime.fromJSDate(e.data.observed, { zone: "utc" }).day));
 
     const firstDay = DateTime.fromObject({ year, month, day: 1 });
     const daysInMonth = firstDay.daysInMonth;

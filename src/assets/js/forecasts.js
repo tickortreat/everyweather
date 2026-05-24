@@ -29,6 +29,29 @@
   const LAT = 43.0531;
   const LON = -72.6695;
 
+  // Source information — shown in tooltips/popovers on the forecast block.
+  // Each entry: full name, location, one-sentence description, link.
+  const SOURCE_INFO = {
+    'NWS': {
+      fullName: 'National Weather Service',
+      location: 'United States',
+      description: 'The forecasting arm of the National Oceanic and Atmospheric Administration, operating since 1870. Most U.S. weather apps derive their forecasts from NWS models.',
+      url: 'https://www.weather.gov/about/'
+    },
+    'ECMWF': {
+      fullName: 'European Centre for Medium-Range Weather Forecasts',
+      location: 'Reading, England',
+      description: 'An independent intergovernmental organization established in 1975, supported by 35 European nations. Widely considered the world\'s most accurate global weather model, served here via Open-Meteo.',
+      url: 'https://www.ecmwf.int/'
+    },
+    'MET Norway': {
+      fullName: 'Norwegian Meteorological Institute',
+      location: 'Oslo, Norway',
+      description: 'Norway\'s national meteorological service, founded in 1866. Runs its own atmospheric models with particular strength at northern latitudes and over complex terrain.',
+      url: 'https://www.met.no/en'
+    }
+  };
+
   // Cache helpers ------------------------------------------------
 
   const CACHE_KEY = 'everyweather_forecasts_v1';
@@ -249,17 +272,41 @@
 
   function renderForecasts(results) {
     const rows = results.map(r => {
+      const info = SOURCE_INFO[r.source];
+      const infoButton = info ? `
+        <button class="source-info-trigger" data-source="${r.source}" aria-label="About ${r.source}" aria-expanded="false" aria-haspopup="true">
+          <span aria-hidden="true">i</span>
+        </button>
+      ` : '';
+
+      const popover = info ? `
+        <div class="source-info-popover" data-source-popover="${r.source}" role="dialog" aria-label="About ${r.source}" hidden>
+          <div class="popover-fullname">${info.fullName}</div>
+          <div class="popover-location">${info.location}</div>
+          <div class="popover-description">${info.description}</div>
+          <a class="popover-link" href="${info.url}" target="_blank" rel="noopener noreferrer">Learn more →</a>
+        </div>
+      ` : '';
+
       if (r.error) {
         return `
           <div class="forecast-source-row">
-            <span class="forecast-source-name">${r.source}</span>
+            <span class="forecast-source-name-wrap">
+              <span class="forecast-source-name">${r.source}</span>
+              ${infoButton}
+              ${popover}
+            </span>
             <span class="forecast-source-value forecast-source-error">—</span>
           </div>
         `;
       }
       return `
         <div class="forecast-source-row">
-          <span class="forecast-source-name">${r.source}</span>
+          <span class="forecast-source-name-wrap">
+            <span class="forecast-source-name">${r.source}</span>
+            ${infoButton}
+            ${popover}
+          </span>
           <span class="forecast-source-value">
             <span class="forecast-source-temp">${r.temp}°${r.unit}</span>
             ${r.conditions ? `<span class="forecast-source-conditions">· ${r.conditions}</span>` : ''}
@@ -283,6 +330,85 @@
         </div>
       </div>
     `;
+
+    wireInfoPopovers();
+  }
+
+  // Popover interaction handlers --------------------------------
+
+  function wireInfoPopovers() {
+    const triggers = container.querySelectorAll('.source-info-trigger');
+    const popovers = container.querySelectorAll('.source-info-popover');
+
+    function closeAll() {
+      popovers.forEach(p => p.hidden = true);
+      triggers.forEach(t => t.setAttribute('aria-expanded', 'false'));
+    }
+
+    triggers.forEach(trigger => {
+      const source = trigger.getAttribute('data-source');
+      const popover = container.querySelector(`[data-source-popover="${source}"]`);
+      if (!popover) return;
+
+      // Click to toggle (works for mouse + touch)
+      trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const wasOpen = !popover.hidden;
+        closeAll();
+        if (!wasOpen) {
+          popover.hidden = false;
+          trigger.setAttribute('aria-expanded', 'true');
+        }
+      });
+
+      // Hover behavior for desktop — open on enter, close on leave with a
+      // small grace period so the user can move the cursor onto the popover
+      // (which sits below the wrap) without losing it.
+      const wrap = trigger.closest('.forecast-source-name-wrap');
+      if (!wrap) return;
+
+      let closeTimer = null;
+
+      function openPopover() {
+        if (!window.matchMedia('(hover: hover)').matches) return;
+        if (closeTimer) {
+          clearTimeout(closeTimer);
+          closeTimer = null;
+        }
+        popover.hidden = false;
+        trigger.setAttribute('aria-expanded', 'true');
+      }
+
+      function scheduleClose() {
+        if (!window.matchMedia('(hover: hover)').matches) return;
+        if (closeTimer) clearTimeout(closeTimer);
+        closeTimer = setTimeout(() => {
+          popover.hidden = true;
+          trigger.setAttribute('aria-expanded', 'false');
+          closeTimer = null;
+        }, 200); // 200ms grace to move cursor onto the popover
+      }
+
+      // Open when entering the wrap (label + i button)
+      wrap.addEventListener('mouseenter', openPopover);
+      wrap.addEventListener('mouseleave', scheduleClose);
+
+      // Keep open when entering the popover itself; close when leaving it
+      popover.addEventListener('mouseenter', openPopover);
+      popover.addEventListener('mouseleave', scheduleClose);
+    });
+
+    // Close on outside click
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.forecast-source-name-wrap')) {
+        closeAll();
+      }
+    });
+
+    // Close on Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeAll();
+    });
   }
 
   // Initial loading state ----------------------------------------

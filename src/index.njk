@@ -24,8 +24,8 @@ contentClass: home
 
       <div class="calendar">
         {% set latestDate = todaysEntries[0].data.observed %}
-        {% set y = latestDate.getFullYear() %}
-        {% set m = latestDate.getMonth() + 1 %}
+        {% set y = latestDate | year %}
+        {% set m = latestDate | monthNum %}
         <div class="month-label">{{ latestDate | monthYear }}</div>
         {% calendar y, m, collections.entriesByMonth %}
         <div class="calendar-legend">

@@ -1226,6 +1226,119 @@ a { color: inherit; text-decoration: none; }
   color: var(--sky);
 }
 
+/* Source info trigger + popover */
+
+.forecast-source-name-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  position: relative;
+}
+
+.source-info-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 0.95rem;
+  height: 0.95rem;
+  border-radius: 50%;
+  border: 1px solid var(--ink-ghost);
+  background: transparent;
+  color: var(--ink-faded);
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 0.62rem;
+  font-weight: 500;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.source-info-trigger:hover,
+.source-info-trigger:focus-visible,
+.source-info-trigger[aria-expanded="true"] {
+  border-color: var(--sky);
+  color: var(--sky);
+  outline: none;
+}
+
+.source-info-popover {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 50;
+  min-width: 18rem;
+  max-width: 22rem;
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  border-top: 2px solid var(--sky);
+  border-radius: 2px;
+  padding: 1.1rem 1.25rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  text-align: left;
+  margin-top: 0.5rem;
+}
+
+/* Invisible bridge that allows cursor to travel from trigger to popover
+   without breaking hover (the visible gap is created by the margin-top above,
+   but this ::before fills that gap with invisible hoverable area). */
+.source-info-popover::before {
+  content: '';
+  position: absolute;
+  top: -0.5rem;
+  left: 0;
+  right: 0;
+  height: 0.5rem;
+  background: transparent;
+}
+
+.source-info-popover[hidden] {
+  display: none;
+}
+
+.popover-fullname {
+  font-family: var(--serif);
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.3;
+  margin-bottom: 0.25rem;
+}
+
+.popover-location {
+  font-family: var(--sans);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--gold);
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.popover-description {
+  font-family: var(--serif);
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--ink-soft);
+  margin-bottom: 0.85rem;
+}
+
+.popover-link {
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--green);
+  border-bottom: 1px dotted var(--green-soft);
+  padding-bottom: 1px;
+  transition: color 0.15s ease;
+}
+
+.popover-link:hover {
+  color: var(--green-soft);
+}
+
 .forecast-source-value {
   font-family: var(--serif);
   font-size: 1rem;
@@ -1292,5 +1405,15 @@ a { color: inherit; text-decoration: none; }
   }
   .forecasts-invitation-link {
     font-size: 0.95rem;
+  }
+  /* Popover full-width on mobile */
+  .source-info-popover {
+    position: fixed;
+    top: auto;
+    bottom: 1rem;
+    left: 1rem;
+    right: 1rem;
+    min-width: 0;
+    max-width: none;
   }
 }
